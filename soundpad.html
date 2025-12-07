@@ -500,14 +500,14 @@
         function fadeVolume(audio, targetVolume, duration, callback) {
             const startVolume = audio.volume;
             const volumeDiff = targetVolume - startVolume;
-            const steps = 50;
-            const stepDuration = duration / steps;
+            const stepDuration = 50; // 50ms per step for smooth transition
+            const steps = Math.max(1, Math.floor((duration * 1000) / stepDuration));
+            const volumeStep = volumeDiff / steps;
             let currentStep = 0;
 
             const fadeInterval = setInterval(() => {
                 currentStep++;
-                const progress = currentStep / steps;
-                audio.volume = Math.max(0, Math.min(1, startVolume + (volumeDiff * progress)));
+                audio.volume = Math.max(0, Math.min(1, startVolume + (volumeStep * currentStep)));
 
                 if (currentStep >= steps) {
                     clearInterval(fadeInterval);
@@ -529,7 +529,7 @@
             if (!audio.paused) {
                 // Stop with fade out
                 cell.classList.add('loading');
-                fadeVolume(audio, 0, config.fadeOut * 1000, () => {
+                fadeVolume(audio, 0, config.fadeOut, () => {
                     audio.pause();
                     audio.currentTime = 0;
                     cell.classList.remove('playing', 'loading');
@@ -545,7 +545,7 @@
                     cell.classList.add('playing');
                     updatePlayButton(trackId, true);
                     
-                    fadeVolume(audio, 1, config.fadeIn * 1000);
+                    fadeVolume(audio, 1, config.fadeIn);
                 } catch (error) {
                     console.error('Play error:', error);
                     cell.classList.remove('playing');
