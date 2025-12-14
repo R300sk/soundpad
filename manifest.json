@@ -1,0 +1,26 @@
+{
+  "name": "Fashion Show Soundpad",
+  "short_name": "Soundpad",
+  "description": "Professional soundpad for fashion show audio management",
+  "start_url": "./soundpad.html",
+  "display": "standalone",
+  "background_color": "#1a1a1a",
+  "theme_color": "#1a1a1a",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' fill='%231a1a1a'/%3E%3Cpath fill='%238b5cf6' d='M256 128c-35.3 0-64 28.7-64 64v128c0 35.3 28.7 64 64 64s64-28.7 64-64V192c0-35.3-28.7-64-64-64z'/%3E%3Cpath fill='%23ff8c42' d='M128 256c0-70.7 57.3-128 128-128s128 57.3 128 128v64h-32v-64c0-53-43-96-96-96s-96 43-96 96v64h-32v-64z'/%3E%3Cpath fill='%23ffffff' d='M240 400h32v48h-32z'/%3E%3Crect x='192' y='432' width='128' height='16' fill='%23ffffff' rx='8'/%3E%3C/svg%3E",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' fill='%231a1a1a'/%3E%3Cpath fill='%238b5cf6' d='M96 48c-13.3 0-24 10.7-24 24v48c0 13.3 10.7 24 24 24s24-10.7 24-24V72c0-13.3-10.7-24-24-24z'/%3E%3Cpath fill='%23ff8c42' d='M48 96c0-26.5 21.5-48 48-48s48 21.5 48 48v24h-12V96c0-19.9-16.1-36-36-36s-36 16.1-36 36v24H48V96z'/%3E%3Cpath fill='%23ffffff' d='M90 150h12v18H90z'/%3E%3Crect x='72' y='162' width='48' height='6' fill='%23ffffff' rx='3'/%3E%3C/svg%3E",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ],
+  "categories": ["music", "entertainment", "productivity"],
+  "prefer_related_applications": false
+}

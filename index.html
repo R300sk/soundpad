@@ -1,0 +1,1428 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#1a1a1a">
+    <title>Fashion Show Soundpad v1.3</title>
+    <link rel="manifest" href="manifest.json">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #1a1a1a;
+            color: #ffffff;
+            overflow-x: hidden;
+            min-height: 100vh;
+            padding-bottom: 80px;
+        }
+
+        .header {
+            background: #0a0a0a;
+            padding: 20px;
+            text-align: center;
+            border-bottom: 2px solid #333;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            font-weight: 600;
+        }
+
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            padding: 16px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .track-cell {
+            aspect-ratio: 1;
+            border-radius: 20px;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
+            min-height: 80px;
+            min-width: 80px;
+        }
+
+        .track-cell:active {
+            transform: scale(0.95);
+        }
+
+        .track-cell::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.4);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+
+        .track-cell.ripple::after {
+            width: 200%;
+            height: 200%;
+        }
+
+        .track-cell.empty {
+            background: transparent;
+            cursor: default;
+        }
+
+        .track-cell.row-odd {
+            background: linear-gradient(135deg, #ff8c42 0%, #ff6b1a 100%);
+        }
+
+        .track-cell.row-even {
+            background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%);
+        }
+
+        /* Color coding for individual models */
+        .track-cell.model-1 {
+            background: linear-gradient(135deg, #ec4899 0%, #be185d 100%); /* Pink */
+        }
+
+        .track-cell.model-2 {
+            background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%); /* Purple */
+        }
+
+        .track-cell.model-3 {
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); /* Blue */
+        }
+
+        .track-cell.model-4 {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%); /* Green */
+        }
+
+        .track-cell.model-5 {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); /* Amber */
+        }
+
+        .track-cell.model-6 {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); /* Red */
+        }
+
+        .track-cell.playing {
+            border-color: #ffffff;
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
+        }
+
+        .track-cell.loading {
+            opacity: 0.6;
+        }
+
+        .play-button {
+            width: 60px;
+            height: 60px;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 8px;
+            border: 2px solid rgba(255, 255, 255, 0.5);
+        }
+
+        .play-icon {
+            width: 0;
+            height: 0;
+            border-left: 20px solid white;
+            border-top: 12px solid transparent;
+            border-bottom: 12px solid transparent;
+            margin-left: 4px;
+        }
+
+        .stop-icon {
+            width: 24px;
+            height: 24px;
+            background: white;
+            border-radius: 3px;
+        }
+
+        .track-label {
+            font-size: 12px;
+            font-weight: 600;
+            text-align: center;
+            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+        }
+
+        .track-description {
+            font-size: 9px;
+            text-align: center;
+            opacity: 0.8;
+            margin-top: 4px;
+            line-height: 1.2;
+        }
+
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: #0a0a0a;
+            border-top: 2px solid #333;
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            z-index: 1000;
+            max-height: 60vh;
+            overflow-y: auto;
+        }
+
+        .player-track {
+            background: #1a1a1a;
+            border-radius: 12px;
+            padding: 12px;
+            margin-bottom: 8px;
+        }
+
+        .player-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .player-time {
+            font-size: 14px;
+            color: #888;
+        }
+
+        .progress-container {
+            width: 100%;
+            height: 6px;
+            background: #333;
+            border-radius: 3px;
+            position: relative;
+            cursor: pointer;
+            margin-bottom: 12px;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #8b5cf6 0%, #a78bfa 100%);
+            border-radius: 3px;
+            transition: width 0.1s linear;
+            position: relative;
+        }
+
+        .progress-handle {
+            position: absolute;
+            right: -8px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 16px;
+            height: 16px;
+            background: white;
+            border-radius: 50%;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .player-controls {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+        }
+
+        .player-btn {
+            width: 50px;
+            height: 50px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            background: #8b5cf6;
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .player-btn:active {
+            transform: scale(0.95);
+        }
+
+        .player-btn.pause {
+            background: #8b5cf6;
+        }
+
+        .player-btn.stop {
+            background: #444;
+        }
+
+        .player-btn.skip {
+            background: #444;
+        }
+
+        .nav-controls {
+            display: flex;
+            justify-content: center;
+            gap: 16px;
+            padding-top: 8px;
+            border-top: 1px solid #333;
+        }
+
+        .nav-button {
+            padding: 12px 32px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%);
+            color: white;
+            border: none;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .nav-button:active {
+            transform: scale(0.95);
+        }
+
+        .settings-page {
+            display: none;
+            padding: 20px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .settings-page.active {
+            display: block;
+        }
+
+        .main-page {
+            display: block;
+        }
+
+        .main-page.hidden {
+            display: none;
+        }
+
+        .settings-section {
+            background: #2a2a2a;
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .settings-section h2 {
+            font-size: 20px;
+            margin-bottom: 16px;
+            color: #8b5cf6;
+        }
+
+        .track-config {
+            background: #1a1a1a;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 12px;
+        }
+
+        .track-config h3 {
+            font-size: 14px;
+            margin-bottom: 12px;
+            color: #ff8c42;
+        }
+
+        .track-config.even h3 {
+            color: #8b5cf6;
+        }
+
+        .config-row {
+            margin-bottom: 12px;
+        }
+
+        .config-row label {
+            display: block;
+            font-size: 12px;
+            margin-bottom: 4px;
+            color: #aaa;
+        }
+
+        .config-row input[type="file"] {
+            width: 100%;
+            padding: 8px;
+            background: #333;
+            border: 1px solid #555;
+            border-radius: 8px;
+            color: white;
+            font-size: 12px;
+        }
+
+        .config-row input[type="text"],
+        .config-row input[type="number"],
+        .config-row textarea {
+            width: 100%;
+            padding: 8px;
+            background: #333;
+            border: 1px solid #555;
+            border-radius: 8px;
+            color: white;
+            font-size: 14px;
+        }
+
+        .config-row textarea {
+            resize: vertical;
+            min-height: 60px;
+        }
+
+        .config-row select {
+            width: 100%;
+            padding: 8px;
+            background: #333;
+            border: 1px solid #555;
+            border-radius: 8px;
+            color: white;
+            font-size: 14px;
+        }
+
+        .fade-controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 12px;
+            margin-top: 20px;
+        }
+
+        .button-group button {
+            flex: 1;
+            padding: 12px;
+            border-radius: 8px;
+            border: none;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            touch-action: manipulation;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%);
+            color: white;
+        }
+
+        .btn-secondary {
+            background: #333;
+            color: white;
+        }
+
+        .preset-section {
+            background: #2a2a2a;
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .preset-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .preset-item {
+            background: #1a1a1a;
+            border-radius: 8px;
+            padding: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .preset-item.active {
+            border: 2px solid #8b5cf6;
+        }
+
+        .preset-name {
+            font-weight: 600;
+        }
+
+        .preset-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .preset-actions button {
+            padding: 6px 12px;
+            border-radius: 6px;
+            border: none;
+            font-size: 12px;
+            cursor: pointer;
+            touch-action: manipulation;
+        }
+
+        .error-toast {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #ef4444;
+            color: white;
+            padding: 16px 24px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            z-index: 10000;
+            animation: slideDown 0.3s ease;
+        }
+
+        .success-toast {
+            background: #10b981;
+        }
+
+        @keyframes slideDown {
+            from {
+                transform: translateX(-50%) translateY(-100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(-50%) translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .file-info {
+            font-size: 11px;
+            color: #4ade80;
+            margin-top: 4px;
+        }
+
+        .progress-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: #8b5cf6;
+            transform: scaleX(0);
+            transform-origin: left;
+            transition: transform 0.3s ease;
+            z-index: 9999;
+        }
+
+        @media (max-width: 600px) {
+            .grid-container {
+                gap: 8px;
+                padding: 12px;
+            }
+
+            .track-cell {
+                border-radius: 16px;
+                padding: 8px;
+            }
+
+            .play-button {
+                width: 50px;
+                height: 50px;
+            }
+
+            .track-label {
+                font-size: 10px;
+            }
+
+            .track-description {
+                font-size: 8px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="progress-bar" id="progressBar"></div>
+
+    <div class="main-page" id="mainPage">
+        <div class="header">
+            <h1>🎵 Fashion Show Soundpad v1.3</h1>
+        </div>
+        <div class="grid-container" id="gridContainer"></div>
+    </div>
+
+    <div class="settings-page" id="settingsPage">
+        <div class="header">
+            <h1>⚙️ Nastavenia</h1>
+        </div>
+        
+        <div class="preset-section">
+            <h2>📋 Presety</h2>
+            <div class="button-group">
+                <button class="btn-primary" onclick="saveCurrentPreset()">💾 Uložiť ako preset</button>
+            </div>
+            <div class="preset-list" id="presetList"></div>
+        </div>
+        
+        <div id="settingsContainer"></div>
+        <div class="button-group">
+            <button class="btn-secondary" onclick="exportConfig()">📤 Export Config</button>
+            <button class="btn-secondary" onclick="importConfig()">📥 Import Config</button>
+        </div>
+        <input type="file" id="importConfigFile" accept=".json" style="display:none" onchange="handleImportConfig(event)">
+    </div>
+
+    <div class="bottom-nav">
+        <div id="activePlayers"></div>
+        <div class="nav-controls">
+            <button class="nav-button" id="navToggle" onclick="togglePage()">⚙️ Settings</button>
+        </div>
+    </div>
+
+    <script>
+        const DB_NAME = 'SoundpadDB';
+        const DB_VERSION = 1;
+        let db;
+
+        const TRACKS = [
+            { id: 1, row: 1, col: 1, label: 'Úvodný song', default: true },
+            { id: 2, row: 1, col: 2, label: '', empty: true },
+            { id: 3, row: 1, col: 3, label: '', empty: true },
+            
+            { id: 4, row: 2, col: 1, label: 'Model 1 - Podmaz' },
+            { id: 5, row: 2, col: 2, label: 'Model 1 - Loop' },
+            { id: 6, row: 2, col: 3, label: 'Model 1 - Záver' },
+            
+            { id: 7, row: 3, col: 1, label: 'Model 2 - Podmaz' },
+            { id: 8, row: 3, col: 2, label: 'Model 2 - Loop' },
+            { id: 9, row: 3, col: 3, label: 'Model 2 - Záver' },
+            
+            { id: 10, row: 4, col: 1, label: 'Model 3 - Podmaz' },
+            { id: 11, row: 4, col: 2, label: 'Model 3 - Loop' },
+            { id: 12, row: 4, col: 3, label: 'Model 3 - Záver' },
+            
+            { id: 13, row: 5, col: 1, label: 'Model 4 - Podmaz' },
+            { id: 14, row: 5, col: 2, label: 'Model 4 - Loop' },
+            { id: 15, row: 5, col: 3, label: 'Model 4 - Záver' },
+            
+            { id: 16, row: 6, col: 1, label: 'Model 5 - Podmaz' },
+            { id: 17, row: 6, col: 2, label: 'Model 5 - Loop' },
+            { id: 18, row: 6, col: 3, label: 'Model 5 - Záver' },
+            
+            { id: 19, row: 7, col: 1, label: 'Model 6 - Podmaz' },
+            { id: 20, row: 7, col: 2, label: 'Model 6 - Loop' },
+            { id: 21, row: 7, col: 3, label: 'Model 6 - Záver' },
+            
+            { id: 22, row: 8, col: 1, label: 'Záverečné defilé', default: true },
+            { id: 23, row: 8, col: 2, label: '', empty: true },
+            { id: 24, row: 8, col: 3, label: '', empty: true }
+        ];
+
+        const audioPlayers = {};
+        const trackConfigs = {};
+        let audioContext;
+        const audioSources = {};
+        const gainNodes = {};
+        const audioBuffers = {};
+        const trackStartTimes = {}; // Track when each track started playing
+        let playerUpdateRunning = false;
+        let currentPreset = 'default';
+        const presets = {};
+
+        // Initialize Web Audio API
+        function initAudioContext() {
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            // Resume context on user interaction (iOS requirement)
+            if (audioContext.state === 'suspended') {
+                audioContext.resume();
+            }
+        }
+
+        // Request Screen Wake Lock
+        let wakeLock = null;
+        async function requestWakeLock() {
+            try {
+                if ('wakeLock' in navigator) {
+                    wakeLock = await navigator.wakeLock.request('screen');
+                    console.log('Screen Wake Lock active');
+                    wakeLock.addEventListener('release', () => {
+                        console.log('Screen Wake Lock released');
+                    });
+                }
+            } catch (err) {
+                console.error('Wake Lock error:', err);
+            }
+        }
+
+        // Toast notification system
+        function showToast(message, isError = false) {
+            const toast = document.createElement('div');
+            toast.className = isError ? 'error-toast' : 'success-toast error-toast';
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        // Update player display with requestAnimationFrame
+        function updatePlayerDisplay() {
+            const container = document.getElementById('activePlayers');
+            const activeTracks = Object.keys(audioSources).filter(id => audioSources[id]);
+            
+            if (activeTracks.length === 0) {
+                container.innerHTML = '';
+                playerUpdateRunning = false;
+                return;
+            }
+
+            container.innerHTML = activeTracks.map(trackId => {
+                const track = TRACKS.find(t => t.id === parseInt(trackId));
+                const buffer = audioBuffers[trackId];
+                const startTime = trackStartTimes[trackId];
+                const currentTime = audioContext.currentTime - startTime;
+                const duration = buffer.duration;
+                const remaining = duration - currentTime;
+                const progress = (currentTime / duration) * 100;
+
+                return `
+                    <div class="player-track">
+                        <div class="player-header">
+                            <span>${track.label}</span>
+                            <div>
+                                <span class="player-time">${formatTime(currentTime)}</span>
+                                <span class="player-time">-${formatTime(remaining)}</span>
+                            </div>
+                        </div>
+                        <div class="progress-container" onclick="seekTrack(${trackId}, event)">
+                            <div class="progress-bar-fill" style="width: ${progress}%">
+                                <div class="progress-handle"></div>
+                            </div>
+                        </div>
+                        <div class="player-controls">
+                            <button class="player-btn pause" onclick="pauseTrack(${trackId})">
+                                <div style="width: 6px; height: 20px; background: white; margin-right: 4px;"></div>
+                                <div style="width: 6px; height: 20px; background: white;"></div>
+                            </button>
+                            <button class="player-btn stop" onclick="stopTrack(${trackId})">
+                                <div style="width: 16px; height: 16px; background: white; border-radius: 2px;"></div>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            if (playerUpdateRunning) {
+                requestAnimationFrame(updatePlayerDisplay);
+            }
+        }
+
+        function startPlayerUpdate() {
+            if (!playerUpdateRunning) {
+                playerUpdateRunning = true;
+                requestAnimationFrame(updatePlayerDisplay);
+            }
+        }
+
+        // Format time helper
+        function formatTime(seconds) {
+            const mins = Math.floor(seconds / 60);
+            const secs = Math.floor(seconds % 60);
+            return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        }
+
+        // Pause track
+        function pauseTrack(trackId) {
+            const source = audioSources[trackId];
+            const gainNode = gainNodes[trackId];
+            if (source && gainNode) {
+                // Web Audio API doesn't support pause, so we fade out and stop
+                const config = trackConfigs[trackId];
+                fadeVolume(gainNode, 0, 0.2, () => {
+                    source.stop();
+                    audioSources[trackId] = null;
+                    gainNodes[trackId] = null;
+                    const cell = document.querySelector(`[data-track-id="${trackId}"]`);
+                    cell.classList.remove('playing');
+                    updatePlayButton(trackId, false);
+                    updatePlayerDisplay();
+                });
+            }
+        }
+
+        // Stop track
+        function stopTrack(trackId) {
+            pauseTrack(trackId); // Same as pause for now
+        }
+
+        // Seek track
+        function seekTrack(trackId, event) {
+            const progressBar = event.currentTarget;
+            const rect = progressBar.getBoundingClientRect();
+            const clickX = event.clientX - rect.left;
+            const percentage = clickX / rect.width;
+            const buffer = audioBuffers[trackId];
+            const newTime = percentage * buffer.duration;
+
+            // Stop current playback
+            if (audioSources[trackId]) {
+                audioSources[trackId].stop();
+            }
+
+            // Start from new position
+            const config = trackConfigs[trackId];
+            const source = audioContext.createBufferSource();
+            source.buffer = buffer;
+            
+            const gainNode = audioContext.createGain();
+            gainNode.gain.value = 1;
+            
+            source.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            source.onended = () => {
+                if (audioSources[trackId] === source) {
+                    handleTrackEnd(trackId);
+                }
+            };
+            
+            audioSources[trackId] = source;
+            gainNodes[trackId] = gainNode;
+            trackStartTimes[trackId] = audioContext.currentTime - newTime;
+            
+            source.start(0, newTime);
+            updatePlayerDisplay();
+        }
+
+        // Initialize IndexedDB
+        async function initDB() {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open(DB_NAME, DB_VERSION);
+                
+                request.onerror = () => reject(request.error);
+                request.onsuccess = () => {
+                    db = request.result;
+                    resolve(db);
+                };
+                
+                request.onupgradeneeded = (event) => {
+                    const db = event.target.result;
+                    if (!db.objectStoreNames.contains('audioFiles')) {
+                        db.createObjectStore('audioFiles', { keyPath: 'id' });
+                    }
+                    if (!db.objectStoreNames.contains('configs')) {
+                        db.createObjectStore('configs', { keyPath: 'id' });
+                    }
+                };
+            });
+        }
+
+        // Save audio file to IndexedDB
+        async function saveAudioFile(trackId, file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = async (e) => {
+                    const transaction = db.transaction(['audioFiles'], 'readwrite');
+                    const store = transaction.objectStore('audioFiles');
+                    const data = {
+                        id: trackId,
+                        fileName: file.name,
+                        blob: e.target.result,
+                        type: file.type
+                    };
+                    const request = store.put(data);
+                    request.onsuccess = () => resolve();
+                    request.onerror = () => reject(request.error);
+                };
+                reader.onerror = () => reject(reader.error);
+                reader.readAsArrayBuffer(file);
+            });
+        }
+
+        // Load audio file from IndexedDB
+        async function loadAudioFile(trackId) {
+            return new Promise((resolve, reject) => {
+                const transaction = db.transaction(['audioFiles'], 'readonly');
+                const store = transaction.objectStore('audioFiles');
+                const request = store.get(trackId);
+                
+                request.onsuccess = () => {
+                    if (request.result) {
+                        const blob = new Blob([request.result.blob], { type: request.result.type });
+                        const url = URL.createObjectURL(blob);
+                        resolve({ url, fileName: request.result.fileName });
+                    } else {
+                        resolve(null);
+                    }
+                };
+                request.onerror = () => reject(request.error);
+            });
+        }
+
+        // Save config to IndexedDB
+        async function saveConfig(trackId, config) {
+            return new Promise((resolve, reject) => {
+                const transaction = db.transaction(['configs'], 'readwrite');
+                const store = transaction.objectStore('configs');
+                const data = { id: trackId, ...config };
+                const request = store.put(data);
+                request.onsuccess = () => resolve();
+                request.onerror = () => reject(request.error);
+            });
+        }
+
+        // Load config from IndexedDB
+        async function loadConfig(trackId) {
+            return new Promise((resolve, reject) => {
+                const transaction = db.transaction(['configs'], 'readonly');
+                const store = transaction.objectStore('configs');
+                const request = store.get(trackId);
+                
+                request.onsuccess = () => {
+                    resolve(request.result || {
+                        fadeIn: 0,
+                        fadeOut: 0,
+                        autoNext: false,
+                        loop: false,
+                        description: ''
+                    });
+                };
+                request.onerror = () => reject(request.error);
+            });
+        }
+
+        // Web Audio API fade functionality
+        function fadeVolume(gainNode, targetVolume, duration, callback) {
+            const currentTime = audioContext.currentTime;
+            const currentVolume = gainNode.gain.value;
+            
+            console.log(`Fade: start=${currentVolume.toFixed(3)}, target=${targetVolume}, duration=${duration}s`);
+            
+            // Cancel any scheduled changes
+            gainNode.gain.cancelScheduledValues(currentTime);
+            gainNode.gain.setValueAtTime(currentVolume, currentTime);
+            
+            // Linear ramp to target volume
+            gainNode.gain.linearRampToValueAtTime(targetVolume, currentTime + duration);
+            
+            // Execute callback after fade completes
+            if (callback) {
+                setTimeout(callback, duration * 1000);
+            }
+        }
+
+        // Play track with fade in using Web Audio API
+        async function playTrack(trackId) {
+            try {
+                initAudioContext();
+                requestWakeLock(); // Keep screen on
+                
+                const config = trackConfigs[trackId];
+                const cell = document.querySelector(`[data-track-id="${trackId}"]`);
+                
+                if (!audioBuffers[trackId]) {
+                    showToast('⚠️ Najprv nahraj MP3 súbor v nastaveniach', true);
+                    return;
+                }
+
+                // If already playing, stop with fade out
+                if (audioSources[trackId]) {
+                    cell.classList.add('loading');
+                    fadeVolume(gainNodes[trackId], 0, config.fadeOut, () => {
+                        if (audioSources[trackId]) {
+                            audioSources[trackId].stop();
+                            audioSources[trackId] = null;
+                        }
+                        cell.classList.remove('playing', 'loading');
+                        updatePlayButton(trackId, false);
+                        updatePlayerDisplay();
+                    });
+                    return;
+                }
+
+                // Create new source and gain node
+                const source = audioContext.createBufferSource();
+                source.buffer = audioBuffers[trackId];
+                
+                const gainNode = audioContext.createGain();
+                gainNode.gain.value = 0; // Start at 0 for fade in
+                
+                source.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                // Handle track end
+                source.onended = () => {
+                    if (audioSources[trackId] === source) {
+                        handleTrackEnd(trackId);
+                    }
+                };
+                
+                // Store references
+                audioSources[trackId] = source;
+                gainNodes[trackId] = gainNode;
+                trackStartTimes[trackId] = audioContext.currentTime;
+                
+                // Start playback
+                source.start(0);
+                cell.classList.add('playing');
+                updatePlayButton(trackId, true);
+                
+                // Fade in
+                fadeVolume(gainNode, 1, config.fadeIn);
+                
+                // Update player display
+                startPlayerUpdate();
+            } catch (error) {
+                console.error('Play error:', error);
+                showToast('❌ Chyba pri prehrávaní tracku', true);
+                const cell = document.querySelector(`[data-track-id="${trackId}"]`);
+                if (cell) cell.classList.remove('playing', 'loading');
+            }
+        }
+
+        // Update play button appearance
+        function updatePlayButton(trackId, isPlaying) {
+            const cell = document.querySelector(`[data-track-id="${trackId}"]`);
+            const button = cell.querySelector('.play-button');
+            button.innerHTML = isPlaying ? '<div class="stop-icon"></div>' : '<div class="play-icon"></div>';
+        }
+
+        // Handle track end
+        function handleTrackEnd(trackId) {
+            const config = trackConfigs[trackId];
+            const cell = document.querySelector(`[data-track-id="${trackId}"]`);
+            
+            audioSources[trackId] = null;
+            gainNodes[trackId] = null;
+            delete trackStartTimes[trackId];
+            
+            cell.classList.remove('playing');
+            updatePlayButton(trackId, false);
+            updatePlayerDisplay();
+
+            if (config.loop) {
+                setTimeout(() => playTrack(trackId), 100);
+            } else if (config.autoNext) {
+                const track = TRACKS.find(t => t.id === trackId);
+                const nextTrack = TRACKS.find(t => t.row === track.row && t.col === track.col + 1 && !t.empty);
+                if (nextTrack) {
+                    setTimeout(() => playTrack(nextTrack.id), 100);
+                }
+            }
+        }
+
+        // Render grid
+        function renderGrid() {
+            const container = document.getElementById('gridContainer');
+            container.innerHTML = '';
+
+            TRACKS.forEach(track => {
+                const cell = document.createElement('div');
+                cell.className = 'track-cell';
+                cell.setAttribute('data-track-id', track.id);
+                
+                if (track.empty) {
+                    cell.classList.add('empty');
+                } else {
+                    // Add model-specific color coding
+                    const modelNumber = Math.floor((track.row - 2) / 1) + 1;
+                    if (track.row === 1) {
+                        cell.classList.add('row-odd'); // Úvodný song - orange
+                    } else if (track.row === 8) {
+                        cell.classList.add('row-odd'); // Záverečné defilé - orange
+                    } else if (modelNumber >= 1 && modelNumber <= 6) {
+                        cell.classList.add(`model-${modelNumber}`);
+                    } else {
+                        cell.classList.add(track.row % 2 === 0 ? 'row-even' : 'row-odd');
+                    }
+                    
+                    const config = trackConfigs[track.id] || {};
+                    
+                    cell.innerHTML = `
+                        <div class="play-button">
+                            <div class="play-icon"></div>
+                        </div>
+                        <div class="track-label">${track.label}</div>
+                        ${config.description ? `<div class="track-description">${config.description}</div>` : ''}
+                    `;
+                    
+                    // Add touchstart for instant feedback
+                    cell.addEventListener('touchstart', (e) => {
+                        cell.classList.add('ripple');
+                        setTimeout(() => cell.classList.remove('ripple'), 600);
+                    }, { passive: true });
+                    
+                    cell.addEventListener('click', () => playTrack(track.id));
+                }
+                
+                container.appendChild(cell);
+            });
+        }
+
+        // Render settings
+        async function renderSettings() {
+            // Render preset list
+            const presetList = document.getElementById('presetList');
+            const presetNames = Object.keys(presets);
+            
+            if (presetNames.length > 0) {
+                presetList.innerHTML = presetNames.map(name => `
+                    <div class="preset-item ${name === currentPreset ? 'active' : ''}">
+                        <span class="preset-name">${name}</span>
+                        <div class="preset-actions">
+                            <button class="btn-primary" onclick="loadPreset('${name}')">Načítať</button>
+                            <button class="btn-secondary" onclick="deletePreset('${name}')">Zmazať</button>
+                        </div>
+                    </div>
+                `).join('');
+            } else {
+                presetList.innerHTML = '<p style="color: #888; text-align: center; padding: 20px;">Zatiaľ žiadne uložené presety</p>';
+            }
+            
+            // Render track configs
+            const container = document.getElementById('settingsContainer');
+            container.innerHTML = '';
+
+            for (const track of TRACKS) {
+                if (track.empty) continue;
+
+                const section = document.createElement('div');
+                section.className = 'settings-section';
+
+                const config = await loadConfig(track.id);
+                trackConfigs[track.id] = config;
+
+                const audioFile = await loadAudioFile(track.id);
+                const fileInfo = audioFile ? `<div class="file-info">✓ ${audioFile.fileName}</div>` : '';
+
+                section.innerHTML = `
+                    <div class="track-config ${track.row % 2 === 0 ? 'even' : 'odd'}">
+                        <h3>${track.label}</h3>
+                        
+                        <div class="config-row">
+                            <label>MP3 súbor</label>
+                            <input type="file" accept="audio/mp3,audio/mpeg" onchange="handleFileUpload(${track.id}, event)">
+                            ${fileInfo}
+                        </div>
+
+                        <div class="fade-controls">
+                            <div class="config-row">
+                                <label>Fade In (sekundy)</label>
+                                <select onchange="updateConfig(${track.id}, 'fadeIn', parseFloat(this.value))">
+                                    ${generateFadeOptions(config.fadeIn)}
+                                </select>
+                            </div>
+                            
+                            <div class="config-row">
+                                <label>Fade Out (sekundy)</label>
+                                <select onchange="updateConfig(${track.id}, 'fadeOut', parseFloat(this.value))">
+                                    ${generateFadeOptions(config.fadeOut)}
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="config-row">
+                            <label>
+                                <input type="checkbox" ${config.autoNext ? 'checked' : ''} onchange="updateConfig(${track.id}, 'autoNext', this.checked)">
+                                Automaticky spustiť nasledujúcu v riadku
+                            </label>
+                        </div>
+
+                        <div class="config-row">
+                            <label>
+                                <input type="checkbox" ${config.loop ? 'checked' : ''} onchange="updateConfig(${track.id}, 'loop', this.checked)">
+                                Loop (opakovať)
+                            </label>
+                        </div>
+
+                        <div class="config-row">
+                            <label>Popis</label>
+                            <textarea placeholder="Krátky popis..." onchange="updateConfig(${track.id}, 'description', this.value)">${config.description || ''}</textarea>
+                        </div>
+                    </div>
+                `;
+
+                container.appendChild(section);
+            }
+        }
+
+        // Generate fade options (0.5s steps, 0-5s range)
+        function generateFadeOptions(selected) {
+            let options = '';
+            for (let i = 0; i <= 10; i++) {
+                const value = (i * 0.5).toFixed(1);
+                const isSelected = Math.abs(parseFloat(value) - selected) < 0.01 ? 'selected' : '';
+                options += `<option value="${value}" ${isSelected}>${value}s</option>`;
+            }
+            return options;
+        }
+
+        // Handle file upload
+        async function handleFileUpload(trackId, event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            if (!file.type.includes('audio')) {
+                showToast('⚠️ Prosím vyber MP3 súbor', true);
+                return;
+            }
+
+            try {
+                initAudioContext();
+                
+                showToast('⏳ Nahrávam súbor...');
+                
+                // Save to IndexedDB
+                await saveAudioFile(trackId, file);
+                
+                // Decode audio for Web Audio API
+                const audioData = await loadAudioFile(trackId);
+                const response = await fetch(audioData.url);
+                const arrayBuffer = await response.arrayBuffer();
+                
+                try {
+                    const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+                    audioBuffers[trackId] = audioBuffer;
+                    
+                    await renderSettings();
+                    showToast(`✓ ${file.name} bol úspešne nahratý`);
+                } catch (decodeError) {
+                    console.error('Decode error:', decodeError);
+                    showToast('❌ Súbor je poškodený alebo nie je platný MP3', true);
+                    // Remove from IndexedDB if decode failed
+                    const transaction = db.transaction(['audioFiles'], 'readwrite');
+                    const store = transaction.objectStore('audioFiles');
+                    store.delete(trackId);
+                }
+            } catch (error) {
+                console.error('Upload error:', error);
+                showToast('❌ Chyba pri nahrávaní súboru', true);
+            }
+        }
+
+        // Update config
+        async function updateConfig(trackId, key, value) {
+            trackConfigs[trackId][key] = value;
+            await saveConfig(trackId, trackConfigs[trackId]);
+            renderGrid();
+        }
+
+        // Preset Management
+        async function loadPresets() {
+            return new Promise((resolve, reject) => {
+                const transaction = db.transaction(['configs'], 'readonly');
+                const store = transaction.objectStore('configs');
+                const request = store.get('_presets');
+                
+                request.onsuccess = () => {
+                    if (request.result && request.result.presets) {
+                        Object.assign(presets, request.result.presets);
+                    }
+                    resolve();
+                };
+                request.onerror = () => reject(request.error);
+            });
+        }
+
+        async function savePresets() {
+            return new Promise((resolve, reject) => {
+                const transaction = db.transaction(['configs'], 'readwrite');
+                const store = transaction.objectStore('configs');
+                const request = store.put({ id: '_presets', presets });
+                
+                request.onsuccess = () => resolve();
+                request.onerror = () => reject(request.error);
+            });
+        }
+
+        async function saveCurrentPreset() {
+            const name = prompt('Zadaj názov presetu:', currentPreset === 'default' ? '' : currentPreset);
+            if (!name) return;
+            
+            try {
+                presets[name] = {};
+                for (const trackId in trackConfigs) {
+                    presets[name][trackId] = { ...trackConfigs[trackId] };
+                }
+                currentPreset = name;
+                await savePresets();
+                await renderSettings();
+                showToast(`✓ Preset "${name}" bol uložený`);
+            } catch (error) {
+                console.error('Save preset error:', error);
+                showToast('❌ Chyba pri ukladaní presetu', true);
+            }
+        }
+
+        async function loadPreset(name) {
+            if (!presets[name]) {
+                showToast('⚠️ Preset neexistuje', true);
+                return;
+            }
+            
+            try {
+                for (const trackId in presets[name]) {
+                    trackConfigs[trackId] = { ...presets[name][trackId] };
+                    await saveConfig(parseInt(trackId), trackConfigs[trackId]);
+                }
+                currentPreset = name;
+                renderGrid();
+                await renderSettings();
+                showToast(`✓ Preset "${name}" načítaný`);
+            } catch (error) {
+                console.error('Load preset error:', error);
+                showToast('❌ Chyba pri načítavaní presetu', true);
+            }
+        }
+
+        async function deletePreset(name) {
+            if (!confirm(`Naozaj zmazať preset "${name}"?`)) return;
+            
+            try {
+                delete presets[name];
+                if (currentPreset === name) {
+                    currentPreset = 'default';
+                }
+                await savePresets();
+                await renderSettings();
+                showToast(`✓ Preset "${name}" bol zmazaný`);
+            } catch (error) {
+                console.error('Delete preset error:', error);
+                showToast('❌ Chyba pri mazaní presetu', true);
+            }
+        }
+
+        // Toggle page
+        function togglePage() {
+            const mainPage = document.getElementById('mainPage');
+            const settingsPage = document.getElementById('settingsPage');
+            const navToggle = document.getElementById('navToggle');
+
+            if (mainPage.classList.contains('hidden')) {
+                mainPage.classList.remove('hidden');
+                settingsPage.classList.remove('active');
+                navToggle.textContent = '⚙️ Settings';
+            } else {
+                mainPage.classList.add('hidden');
+                settingsPage.classList.add('active');
+                navToggle.textContent = '🎵 Soundpad';
+            }
+        }
+
+        // Export config
+        async function exportConfig() {
+            const configs = {};
+            for (const track of TRACKS) {
+                if (!track.empty) {
+                    configs[track.id] = await loadConfig(track.id);
+                }
+            }
+            
+            const dataStr = JSON.stringify(configs, null, 2);
+            const blob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `soundpad-config-${Date.now()}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        // Import config
+        function importConfig() {
+            document.getElementById('importConfigFile').click();
+        }
+
+        async function handleImportConfig(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            try {
+                const text = await file.text();
+                const configs = JSON.parse(text);
+                
+                for (const [trackId, config] of Object.entries(configs)) {
+                    await saveConfig(parseInt(trackId), config);
+                    trackConfigs[parseInt(trackId)] = config;
+                }
+                
+                await renderSettings();
+                renderGrid();
+                alert('✓ Konfigurácia bola úspešne importovaná');
+            } catch (error) {
+                console.error('Import error:', error);
+                alert('Chyba pri importovaní konfigurácie');
+            }
+        }
+
+        // Initialize app
+        async function init() {
+            try {
+                await initDB();
+                initAudioContext();
+                await loadPresets();
+                
+                // Load all configs and audio files
+                for (const track of TRACKS) {
+                    if (!track.empty) {
+                        const config = await loadConfig(track.id);
+                        trackConfigs[track.id] = config;
+                        
+                        const audioData = await loadAudioFile(track.id);
+                        if (audioData) {
+                            try {
+                                const response = await fetch(audioData.url);
+                                const arrayBuffer = await response.arrayBuffer();
+                                const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+                                audioBuffers[track.id] = audioBuffer;
+                            } catch (error) {
+                                console.error(`Failed to decode audio for track ${track.id}:`, error);
+                            }
+                        }
+                    }
+                }
+                
+                renderGrid();
+                await renderSettings();
+                showToast('✓ Aplikácia načítaná');
+            } catch (error) {
+                console.error('Init error:', error);
+                showToast('❌ Chyba pri inicializácii aplikácie', true);
+            }
+        }
+
+        // Service Worker registration
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('data:text/javascript;base64,Y29uc3QgQ0FDSEVfTkFNRSA9ICdzb3VuZHBhZC12MSc7DQpzZWxmLmFkZEV2ZW50TGlzdGVuZXIoJ2luc3RhbGwnLCAoZSkgPT4gew0KICBlLndhaXRVbnRpbChjYWNoZXMub3BlbihDQUNIRV9OQU1FKS50aGVuKGNhY2hlID0+IGNhY2hlLmFkZEFsbChbJy4vJ10pKSk7DQp9KTsNCnNlbGYuYWRkRXZlbnRMaXN0ZW5lcignZmV0Y2gnLCAoZSkgPT4gew0KICBlLnJlc3BvbmRXaXRoKGNhY2hlcy5tYXRjaChlLnJlcXVlc3QpLnRoZW4ocmVzcCA9PiByZXNwIHx8IGZldGNoKGUucmVxdWVzdCkpKTsNCn0pOw==')
+                .then(() => console.log('Service Worker registered'))
+                .catch(err => console.log('SW registration failed:', err));
+        }
+
+        // Start app
+        init();
+    </script>
+</body>
+</html>
